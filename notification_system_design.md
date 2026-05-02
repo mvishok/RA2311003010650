@@ -43,7 +43,7 @@ Users receive reminders before the scheduled service date.
 ## 4. Retry Mechanism
 
 * Failed notifications are retried
-* Use exponential backoff (e.g., 1 min → 5 min → 15 min)
+* Use exponential backoff (e.g., 1 min to 5 min to 15 min)
 * Max retry limit (e.g., 3 attempts)
 
 ---
@@ -72,3 +72,192 @@ Users receive reminders before the scheduled service date.
 
 ![Get Services](/screenshots/get%20services.png)
 
+---
+
+# BACKEND TASKS
+
+---
+
+## Stage 1
+
+### Core Actions
+- Create notification
+- Get notifications (user)
+- Mark as read
+- Get unread count
+
+### APIs
+
+#### POST /notifications
+Request:
+{
+  "userId": "string",
+  "type": "Event | Result | Placement",
+  "message": "string"
+}
+
+Response:
+{
+  "id": "string",
+  "status": "created"
+}
+
+---
+
+#### GET /notifications?userId=
+Response:
+[
+  {
+    "id": "...",
+    "type": "...",
+    "message": "...",
+    "isRead": false,
+    "createdAt": "..."
+  }
+]
+
+---
+
+#### PATCH /notifications/:id/read
+Response:
+{
+  "status": "updated"
+}
+
+---
+
+#### GET /notifications/unread/count?userId=
+Response:
+{
+  "count": 5
+}
+
+---
+
+### Real-time
+- Use WebSockets / SSE
+- Push new notifications instantly
+
+---
+
+## Stage 2
+
+### DB Choice
+PostgreSQL (structured + indexing)
+
+### Schema
+
+Table: notifications
+- id (UUID)
+- userId (string, indexed)
+- type (enum)
+- message (text)
+- isRead (boolean, indexed)
+- createdAt (timestamp, indexed)
+
+### Problems at scale
+- Slow queries
+- Large table scans
+
+### Solutions
+- Indexing (userId, isRead, createdAt)
+- Pagination
+- Partitioning by date
+
+### Sample Query
+SELECT * FROM notifications
+WHERE userId = '123' AND isRead = false
+ORDER BY createdAt DESC;
+
+---
+
+## Stage 3
+
+### Problem
+Query will scan large dataset, it will be slower
+
+### Fix
+we should create composite index on the basis of most frequent queries
+(userId, isRead, createdAt DESC)
+
+### should not index everything because
+- High write cost
+- Storage overhead
+
+### Optimized Query
+SELECT * FROM notifications
+WHERE userId = 1042 AND isRead = false
+ORDER BY createdAt DESC;
+
+### Cost
+O(log n) with index
+
+### Placement Query
+SELECT DISTINCT userId
+FROM notifications
+WHERE notificationType = 'Placement'
+AND createdAt >= NOW() - INTERVAL '7 days';
+
+---
+
+## Stage 4
+
+### Problem
+DB overloaded due to frequent fetch
+
+### Solutions
+- Cache (Redis)
+- Pagination / limit
+- Lazy loading
+
+### Tradeoffs
+- Cache = stale data risk
+- WebSockets = infra complexity, cost
+
+---
+
+## Stage 5
+
+### Problems
+- Sequential processing
+- No retry
+- Failure breaks flow
+
+### Fix
+- Use queue (Kafka/Redis)
+- Async processing
+- Retry mechanism
+
+### Improved Flow
+- Push jobs to queue
+- Worker sends email + saves DB
+- Retry on failure
+
+### Pseudocode
+enqueue(notification)
+
+worker:
+  send_email()
+  save_db()
+  push_realtime()
+
+---
+
+## Stage 6
+
+Implemented priority notification system using weighted scoring:
+- Placement > Result > Event
+- Sorted by recency
+
+Approach:
+- Fetch notifications from API
+- Assign weight
+- Sort using score
+- Return top 10
+
+Time Complexity:
+O(n log n)
+
+### Screenshot
+
+![Stage 6](/screenshots/stage%206.png)

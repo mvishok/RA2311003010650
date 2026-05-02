@@ -3,6 +3,7 @@ import dotenv from "dotenv";
 import { Log } from "../../logging_middleware/logger.js";
 import vehicleRoutes from "./routes/vehicle.routes.js";
 import serviceRoutes from "./routes/service.routes.js";
+import priorityRoutes from "./routes/priority.routes.js";
 
 dotenv.config();
 console.log("booted");
@@ -13,6 +14,7 @@ const TOKEN = process.env.TOKEN!;
 
 app.use("/", vehicleRoutes);
 app.use("/", serviceRoutes);
+app.use("/", priorityRoutes);
 
 app.get("/", async (req, res) => {
     await Log("backend", "info", "route", "Root route hit", TOKEN);

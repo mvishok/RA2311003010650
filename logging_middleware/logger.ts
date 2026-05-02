@@ -36,6 +36,7 @@ export const Log = async (
         console.log("received following response", response.data);
         return response.data;
     } catch (err: any) {
+        console.log(token);
         console.error("Log failed:", err.response?.data || err.message);
         console.log(`[FALLBACK LOG] [${level.toUpperCase()}] ${stack} (${pkg}): ${message}`);
         return null;
