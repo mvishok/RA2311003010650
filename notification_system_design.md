@@ -64,3 +64,11 @@ Users receive reminders before the scheduled service date.
 
 ---
 
+## Output Screenshots
+
+![Post Vehicles](/screenshots/post%20vehicles.png)
+
+![Post Services](/screenshots/post%20services.png)
+
+![Get Services](/screenshots/get%20services.png)
+
