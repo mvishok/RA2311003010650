@@ -1,5 +1,4 @@
 import axios from "axios";
-import { env } from "node:process";
 
 const LOG_API = "http://20.207.122.201/evaluation-service/logs";
 
